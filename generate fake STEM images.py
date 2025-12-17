@@ -16,14 +16,14 @@ def generate_stem_image_with_continuous_gb(
     line_spacing=20,           # Spacing between lattice lines
     atom_spacing=20,           # Spacing between atoms along lines
     
-    lattice_angle_deg=20,       # Overall rotation of lattice (degrees)
+    lattice_angle_deg=50,       # Overall rotation of lattice (degrees)
     
-    gb_misorientation_deg=5,   # Grain boundary misorientation (degrees) (don't have this too high, like 10 or less)
+    gb_misorientation_deg=0,   # Grain boundary misorientation (degrees) (don't have this too high, like 10 or less)
     
-    gb_angle=np.deg2rad(20),   # For twinning: equal to lattice_angle_deg # Angle of grain boundary relative to horizontal
-    gb_height=0.001,             # Relative vertical position of GB (0=bottom, 1=top)
+    gb_angle=np.deg2rad(-40),   # For twinning: equal to lattice_angle_deg # Angle of grain boundary relative to horizontal
+    gb_height=0.8,             # Relative vertical position of GB (0=bottom, 1=top)
                 
-    atom_tilt_deg=90,           # Tilt of dumbbell atoms (degrees)
+    atom_tilt_deg=8,           # Tilt of dumbbell atoms (degrees)
     dumbbell_separation=4.0,   # Distance between the two "lobes" of a dumbbell atom
     dumbbell_radius=5.0,        # Radius of each dumbbell lobe
     atom_intensity=2,           # Brightness of atoms
@@ -35,8 +35,8 @@ def generate_stem_image_with_continuous_gb(
     noise_level=0.2,           # Gaussian noise added to final image
     gauss_sigma=2.0,           # Gaussian blur applied to final image
     
-    n_vacancies=6,             # Number of missing atoms
-    n_interstitials=10,         # Number of extra interstitial atoms
+    n_vacancies=1,             # Number of missing atoms
+    n_interstitials=2,         # Number of extra interstitial atoms
     
     seed=None                  # Random seed for reproducibility
 ):
@@ -92,7 +92,8 @@ def generate_stem_image_with_continuous_gb(
                 tilt = np.deg2rad(atom_tilt_deg)           # dumbbell tilt
             else:
                 angle = np.deg2rad(gb_misorientation_deg)
-                tilt = np.deg2rad(45-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
+                # tilt = np.deg2rad(45-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
+                tilt = np.deg2rad(90-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
 
             # Rotate atom around its projected GB point
             new_pos = rotate_about_line(pos, gb_point, angle)
@@ -108,16 +109,17 @@ def generate_stem_image_with_continuous_gb(
     # Randomly select indices for vacancies (missing atoms)
     vacancy_indices = random.sample(range(len(atoms)), n_vacancies)
     vacancy_set = set(vacancy_indices)
+    # vacancy_set are all the vacancy positions
 
     # Draw dumbbell atoms
     for idx, (pos, tilt) in enumerate(atoms):
         if idx in vacancy_set:
-            continue  # skip vacancies
-
+            print('vacancy position', pos)
+            continue # skip vacancies
         cx, cy = pos
         dx = dumbbell_separation * np.cos(tilt)
         dy = dumbbell_separation * np.sin(tilt)
-
+        
         # Each dumbbell has two lobes, draw both
         for sx, sy in [(cx + dx, cy + dy), (cx - dx, cy - dy)]:
             x, y = int(sx), int(sy)
@@ -133,13 +135,14 @@ def generate_stem_image_with_continuous_gb(
         if 0 <= x < img_size and 0 <= y < img_size:
             interstitial_sites.append((x, y))
 
-    # Remove duplicates and randomly select a subset
+    # Remove duplicates and randomly select a subset to be used as interstitial locations
     interstitial_sites = list(set(interstitial_sites))
     chosen = random.sample(interstitial_sites,
                            min(n_interstitials, len(interstitial_sites)))
-
-    # Draw interstitial atoms
+    # chosen = coordinates for interstitial sites
+    # Draw interstitial atoms at chosen coordinates
     for x, y in chosen:
+        print('interstitial position:',x,y)
         rr, cc = disk((y, x), radius=interstitial_r, shape=img.shape)
         img[rr, cc] += atom_intensity * interstitial_intensity
 
@@ -158,7 +161,7 @@ def generate_stem_image_with_continuous_gb(
 # Path to save generated images
 savepath = r"C:\Users\proks\OneDrive\Documents\GitHub\2025_Hackathon\generated artificial data".replace("\\", "/")
 
-seed = 3  # seed for reproducibility
+seed = 9  # seed for reproducibility
 
 if __name__ == "__main__":
     # Generate fake STEM image

@@ -10,7 +10,7 @@ import os
 
 # Upload/load image
 image_path = r"C:\Users\proks\OneDrive\Documents\GitHub\2025_Hackathon\generated artificial data/".replace("\\", "/")
-image_name = "STEM_60.jpeg"
+image_name = "STEM_9.jpeg"
 # image_path = input("Enter the path to your image: ")
 image = Image.open(image_path + image_name)
 
