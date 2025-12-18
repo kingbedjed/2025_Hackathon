@@ -3,9 +3,9 @@
 # What does background do in this code?
 # how does this code draw the bounding boxes?
 
-A twin boundary changes the angle of atoms along a row in the lattice
-I made it into a double twin boundary by making it change the angle for just one line
-Adjust my code so that it makes a triple twin boundary by changing the angle back and forth for 3 lines in a row
+# A twin boundary changes the angle of atoms along a row in the lattice
+# I made it into a double twin boundary by making it change the angle for just one line
+# Adjust my code so that it makes a triple twin boundary by changing the angle back and forth for 3 lines in a row
 
 import numpy as np
 import matplotlib.pyplot as plt
