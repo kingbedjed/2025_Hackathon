@@ -25,10 +25,13 @@ from main import load_images, find_defects
 
 
 class DefectDetectionGUI:
-    def __init__(self, root):
+    def __init__(self, root, debug_mode=False):
         self.root = root
-        self.root.title("Defect Detection")
+        self.root.title("Defect Detection" + (" [DEBUG MODE]" if debug_mode else ""))
         self.root.geometry("1200x800")
+
+        # Debug mode flag
+        self.debug_mode = debug_mode
 
         # Data storage
         self.image_path = None
@@ -121,6 +124,19 @@ class DefectDetectionGUI:
                                      state='disabled')
         self.detect_btn.grid(row=3, column=2, padx=5, pady=(10, 0))
 
+        # Debug mode controls
+        if self.debug_mode:
+            # Load bounding boxes button (debug only)
+            self.load_bbox_btn = ttk.Button(control_frame, text="Load Bounding Boxes (Debug)",
+                                           command=self.load_bounding_boxes, style='Action.TButton',
+                                           state='disabled')
+            self.load_bbox_btn.grid(row=4, column=2, padx=5, pady=(5, 0))
+
+            # Debug info label
+            debug_label = ttk.Label(control_frame, text="🐛 Debug Mode: Load ground truth labels",
+                                   style='Subtitle.TLabel', foreground='orange')
+            debug_label.grid(row=4, column=0, columnspan=2, pady=(5, 0), sticky=tk.W)
+
         # Configure column weights
         control_frame.columnconfigure(1, weight=1)
 
@@ -134,13 +150,22 @@ class DefectDetectionGUI:
         display_frame.columnconfigure(0, weight=1)
         display_frame.rowconfigure(0, weight=1)
 
-        # Create matplotlib figure
-        self.fig, self.ax = plt.subplots(figsize=(10, 7))
+        # Create matplotlib figure with two subplots
+        self.fig, (self.ax, self.ax_bar) = plt.subplots(1, 2, figsize=(14, 7),
+                                                         gridspec_kw={'width_ratios': [3, 1]})
+
+        # Setup image axis
         self.ax.set_xticks([])
         self.ax.set_yticks([])
         self.ax.text(0.5, 0.5, 'No image loaded\nClick "Browse..." to select an image',
                     ha='center', va='center', fontsize=14, color='gray',
                     transform=self.ax.transAxes)
+
+        # Setup bar chart axis
+        self.setup_bar_chart()
+
+        # Adjust layout
+        self.fig.tight_layout(pad=2.0)
 
         # Embed matplotlib figure in tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=display_frame)
@@ -158,6 +183,55 @@ class DefectDetectionGUI:
         # Bind keyboard for zoom reset
         self.root.bind('<r>', self.reset_zoom)
         self.root.bind('<R>', self.reset_zoom)
+
+    def setup_bar_chart(self):
+        """Setup the bar chart for defect class counts."""
+        self.ax_bar.clear()
+        self.ax_bar.set_title('Defect Counts by Class', fontsize=10, pad=10)
+        self.ax_bar.set_xlabel('Class', fontsize=9)
+        self.ax_bar.set_ylabel('Count', fontsize=9)
+        self.ax_bar.set_xticks([0, 1, 2])
+        self.ax_bar.set_xticklabels(['Grain\nBoundary', 'Vacancy', 'Interstitial'])
+        self.ax_bar.set_ylim([0, 1])
+        self.ax_bar.grid(axis='y', alpha=0.3)
+
+    def update_bar_chart(self, bboxes):
+        """Update the bar chart with defect class counts."""
+        # Count defects by class
+        class_counts = {0: 0, 1: 0, 2: 0}
+        if bboxes is not None:
+            for box in bboxes:
+                cls = int(box[0])
+                if cls in class_counts:
+                    class_counts[cls] += 1
+
+        # Update bar chart
+        self.ax_bar.clear()
+        classes = [0, 1, 2]
+        counts = [class_counts[0], class_counts[1], class_counts[2]]
+        colors = ['red', 'blue', 'green']
+        labels = ['Grain\nBoundary', 'Vacancy', 'Interstitial']
+
+        bars = self.ax_bar.bar(classes, counts, color=colors, alpha=0.7, edgecolor='black')
+
+        # Add count labels on top of bars
+        for bar, count in zip(bars, counts):
+            height = bar.get_height()
+            if count > 0:
+                self.ax_bar.text(bar.get_x() + bar.get_width()/2., height,
+                               f'{int(count)}',
+                               ha='center', va='bottom', fontsize=10, fontweight='bold')
+
+        self.ax_bar.set_title('Defect Counts by Class', fontsize=10, pad=10)
+        self.ax_bar.set_xlabel('Class', fontsize=9)
+        self.ax_bar.set_ylabel('Count', fontsize=9)
+        self.ax_bar.set_xticks(classes)
+        self.ax_bar.set_xticklabels(labels, fontsize=8)
+
+        # Set y-axis limit with some headroom
+        max_count = max(counts) if max(counts) > 0 else 1
+        self.ax_bar.set_ylim([0, max_count * 1.2])
+        self.ax_bar.grid(axis='y', alpha=0.3)
 
     def create_status_bar(self, parent):
         """Create the bottom status bar."""
@@ -205,6 +279,10 @@ class DefectDetectionGUI:
             # Enable detection button
             self.detect_btn.config(state='normal')
 
+            # Enable debug buttons if in debug mode
+            if self.debug_mode:
+                self.load_bbox_btn.config(state='normal')
+
             # Update status
             h, w = self.original_image.shape
             self.status_label.config(
@@ -250,6 +328,9 @@ class DefectDetectionGUI:
                     x + [x[0]],
                     y + [y[0]],
                     color=color, linewidth=.5)
+
+        # Update bar chart with class counts
+        self.update_bar_chart(bboxes)
 
         self.canvas.draw()
 
@@ -453,6 +534,80 @@ class DefectDetectionGUI:
         self.ax.set_ylim(new_ylim)
         self.canvas.draw()
 
+    def load_bounding_boxes(self):
+        """Load bounding boxes from a text file (debug mode only)."""
+
+        if self.original_image is None:
+            messagebox.showwarning("No Image", "Please load an image first.")
+            return
+
+        # Open file dialog to select bounding box file
+        bbox_file = filedialog.askopenfilename(
+            title="Select Bounding Box File",
+            filetypes=[
+                ("Text Files", "*.txt"),
+                ("All Files", "*.*")
+            ],
+            initialdir="/home/jed/git/2025_Hackathon/training_data/labels"
+        )
+
+        if not bbox_file:
+            return
+
+        try:
+            # Parse bounding box file
+            bboxes = []
+            with open(bbox_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:  # Skip empty lines
+                        continue
+
+                    # Parse the line: class_id x1 y1 x2 y2 x3 y3 x4 y4
+                    parts = line.split()
+                    if len(parts) >= 9:
+                        # Convert to floats/ints
+                        class_id = int(float(parts[0]))
+                        coords = [float(p) for p in parts[1:9]]
+
+                        # Create bbox tuple: (class_id, x1, y1, x2, y2, x3, y3, x4, y4)
+                        bbox = (class_id, *coords)
+                        bboxes.append(bbox)
+
+            # Store loaded bounding boxes
+            self.bounding_boxes = bboxes
+            self.num_defects = len(bboxes)
+            self.detection_time = 0  # No detection was run
+
+            # Display results
+            title = f"Loaded Bounding Boxes from File"
+            self.display_image(self.original_image, self.bounding_boxes, title=title)
+
+            # Count by class for status message
+            class_counts = {0: 0, 1: 0, 2: 0}
+            for box in self.bounding_boxes:
+                cls = int(box[0])
+                if cls in class_counts:
+                    class_counts[cls] += 1
+
+            # Update status
+            status_text = f"Loaded {self.num_defects} bounding boxes from file (GB:{class_counts[0]}, V:{class_counts[1]}, I:{class_counts[2]})"
+            self.status_label.config(text=status_text)
+
+            # Show info dialog
+            messagebox.showinfo(
+                "Bounding Boxes Loaded",
+                f"Loaded {self.num_defects} bounding boxes from:\n{bbox_file.split('/')[-1]}\n\n"
+                f"  - Grain Boundary: {class_counts[0]}\n"
+                f"  - Vacancy: {class_counts[1]}\n"
+                f"  - Interstitial: {class_counts[2]}\n"
+            )
+
+        except Exception as e:
+            messagebox.showerror("Error Loading Bounding Boxes",
+                               f"Failed to load bounding boxes:\n{str(e)}")
+            self.status_label.config(text="Error loading bounding boxes")
+
     def run_detection(self):
         """Run defect detection on the loaded image."""
 
@@ -491,6 +646,13 @@ class DefectDetectionGUI:
         title = f"Defect Detection Results"
         self.display_image(self.original_image, self.bounding_boxes, title=title)
 
+        # Count defects by class
+        class_counts = {0: 0, 1: 0, 2: 0}
+        for box in self.bounding_boxes:
+            cls = int(box[0])
+            if cls in class_counts:
+                class_counts[cls] += 1
+
         # Update status with timing info
         status_text = f"Detected {self.num_defects} defects in your image in {self.detection_time:.1f}ms"
         self.status_label.config(text=status_text)
@@ -499,16 +661,27 @@ class DefectDetectionGUI:
         messagebox.showinfo(
             "Detection Complete",
             f"Detection completed successfully!\n\n"
-            f"Defects found: {self.num_defects}\n"
+            f"Total defects: {self.num_defects}\n"
+            f"  - Grain Boundary: {class_counts[0]}\n"
+            f"  - Vacancy: {class_counts[1]}\n"
+            f"  - Interstitial: {class_counts[2]}\n\n"
             f"Processing time: {self.detection_time:.1f} ms\n"
         )
 
 
 def main():
     """Main entry point for the GUI application."""
+    import sys
+    import argparse
+
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(description='Defect Detection GUI')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug mode (allows loading ground truth bounding box files)')
+    args = parser.parse_args()
 
     root = tk.Tk()
-    app = DefectDetectionGUI(root)
+    app = DefectDetectionGUI(root, debug_mode=args.debug)
     root.mainloop()
 
     return 0
