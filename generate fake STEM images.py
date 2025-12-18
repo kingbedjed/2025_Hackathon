@@ -18,14 +18,14 @@ def generate_stem_image_with_continuous_gb(
     line_spacing=20,           # Spacing between lattice lines
     atom_spacing=20,           # Spacing between atoms along lines
 
-    lattice_angle_deg=50,       # Overall rotation of lattice (degrees)
+    lattice_angle_deg=25,       # Overall rotation of lattice (degrees)
 
-    gb_misorientation_deg=0,   # Grain boundary misorientation (degrees) (don't have this too high, like 10 or less)
+    gb_misorientation_deg=5,   # Grain boundary misorientation (degrees) (don't have this too high, like 10 or less)
 
-    gb_angle=np.deg2rad(-40),   # For twinning: equal to lattice_angle_deg # Angle of grain boundary relative to horizontal
-    gb_height=0.8,             # Relative vertical position of GB (0=bottom, 1=top)
+    gb_angle=np.deg2rad(25),   # For twinning: equal to lattice_angle_deg # Angle of grain boundary relative to horizontal
+    gb_height=0.2,             # Relative vertical position of GB (0=bottom, 1=top)
 
-    atom_tilt_deg=8,           # Tilt of dumbbell atoms (degrees)
+    atom_tilt_deg=150,           # Tilt of dumbbell atoms (degrees)
     dumbbell_separation=4.0,   # Distance between the two "lobes" of a dumbbell atom
     dumbbell_radius=5.0,        # Radius of each dumbbell lobe
     atom_intensity=2,           # Brightness of atoms
@@ -119,8 +119,8 @@ def generate_stem_image_with_continuous_gb(
                 tilt = np.deg2rad(atom_tilt_deg)           # dumbbell tilt
             else:
                 angle = np.deg2rad(gb_misorientation_deg)
-                # tilt = np.deg2rad(45-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
-                tilt = np.deg2rad(90-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
+                tilt = np.deg2rad(45-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
+                # tilt = np.deg2rad(90-atom_tilt_deg) # this makes sure atoms tilt relative to lattice
 
             # Rotate atom around its projected GB point
             new_pos = rotate_about_line(pos, gb_point, angle)
@@ -240,10 +240,10 @@ def rotate_flip_image_and_bboxes(image, bounding_boxes, rot, refl):
 
     return rotated_img, transformed_bboxes
 
-# Path to save generated images
-savepath = r"C:\Users\proks\OneDrive\Documents\GitHub\2025_Hackathon\generated artificial data".replace("\\", "/")
+# # Path to save generated images
+# savepath = r"C:\Users\proks\OneDrive\Documents\GitHub\2025_Hackathon\generated artificial data".replace("\\", "/")
 
-seed = 9  # seed for reproducibility
+seed = 1  # seed for reproducibility
 
 if __name__ == "__main__":
     # Generate fake STEM image
@@ -268,13 +268,13 @@ if __name__ == "__main__":
             y + [y[0]],
             color=color, linewidth=.5)
     axis.axis("off")
-    figure.savefig(savepath+'/STEM_' + str(seed) + '.jpeg', bbox_inches="tight", dpi=300)
+    # figure.savefig(savepath+'/STEM_' + str(seed) + '.jpeg', bbox_inches="tight", dpi=300)
     plt.show()
     image = Image.fromarray((img * 255).astype(np.uint8))
-    image.save(savepath+'/STEM_' + str(seed) + '.tif')
+    # image.save(savepath+'/STEM_' + str(seed) + '.tif')
     # Save bounding boxes to CSV
     bbox_df = pd.DataFrame(bounding_boxes, columns=['class', 'x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'x4', 'y4'])
-    bbox_df.to_csv(savepath+'/STEM_' + str(seed) + '_bboxes.csv', index=False)
+    # bbox_df.to_csv(savepath+'/STEM_' + str(seed) + '_bboxes.csv', index=False)
 
     rotations = [0, 90, 180, 270]  # degrees
     reflections = ['none', 'horizontal', 'vertical', 'both']
@@ -287,27 +287,27 @@ if __name__ == "__main__":
             transformed_img, transformed_bboxes = rotate_flip_image_and_bboxes(image, bounding_boxes, rot, refl)
             # import pdb; pdb.set_trace()
 
-            # Save the transformed image
-            transformed_img.save(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}.tif')
-            # Save transformed bounding boxes to CSV
-            transformed_bboxes_df = pd.DataFrame(transformed_bboxes, columns=['class', 'x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'x4', 'y4'])
-            transformed_bboxes_df.to_csv(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}_bboxes.csv', index=False)
-            # plot and save transformed image with bounding boxes
-            figure, axis = plt.subplots(figsize=(5,5), dpi=300)
-            axis.imshow(transformed_img, cmap="gray")
-            for box in transformed_bboxes:
-                cls = box[0]
-                x = list(box[1::2])
-                y = list(box[2::2])
-                if cls == 0:
-                    color = 'red'  # grain boundary
-                elif cls == 1:
-                    color = 'blue' # vacancy
-                elif cls == 2:
-                    color = 'green' # interstitial
-                axis.plot(
-                    x + [x[0]],
-                    y + [y[0]],
-                    color=color, linewidth=.5)
-            axis.axis("off")
-            figure.savefig(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}.jpeg', bbox_inches="tight", dpi=300)
+            # # Save the transformed image
+            # transformed_img.save(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}.tif')
+            # # Save transformed bounding boxes to CSV
+            # transformed_bboxes_df = pd.DataFrame(transformed_bboxes, columns=['class', 'x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'x4', 'y4'])
+            # transformed_bboxes_df.to_csv(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}_bboxes.csv', index=False)
+            # # plot and save transformed image with bounding boxes
+            # figure, axis = plt.subplots(figsize=(5,5), dpi=300)
+            # axis.imshow(transformed_img, cmap="gray")
+            # for box in transformed_bboxes:
+            #     cls = box[0]
+            #     x = list(box[1::2])
+            #     y = list(box[2::2])
+            #     if cls == 0:
+            #         color = 'red'  # grain boundary
+            #     elif cls == 1:
+            #         color = 'blue' # vacancy
+            #     elif cls == 2:
+            #         color = 'green' # interstitial
+            #     axis.plot(
+            #         x + [x[0]],
+            #         y + [y[0]],
+            #         color=color, linewidth=.5)
+            # axis.axis("off")
+            # # figure.savefig(savepath+'/STEM_' + str(seed) + f'_rot{rot}_refl{refl}.jpeg', bbox_inches="tight", dpi=300)
