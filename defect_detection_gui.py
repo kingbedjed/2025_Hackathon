@@ -21,17 +21,28 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import time
 
 # Import functions from main.py
-from main import load_images, find_defects
+from main import load_images, find_defects_yolo
+from ultralytics import YOLO
+from pathlib import Path
+import os
 
 
 class DefectDetectionGUI:
-    def __init__(self, root, debug_mode=False):
+    def __init__(self, root, debug_mode=False, model_path=None):
         self.root = root
         self.root.title("Defect Detection" + (" [DEBUG MODE]" if debug_mode else ""))
         self.root.geometry("1200x800")
 
         # Debug mode flag
         self.debug_mode = debug_mode
+
+        # Load YOLO model
+        if model_path is None:
+            model_path = Path(os.getcwd()) / "trained_models" / "yolov11_obb" / "model_1" / "weights" / "best.pt"
+
+        print(f"Loading YOLO model from: {model_path}")
+        self.model = YOLO(model_path)
+        print("YOLO model loaded successfully")
 
         # Data storage
         self.image_path = None
@@ -256,7 +267,7 @@ class DefectDetectionGUI:
                 ("JPEG Files", "*.jpg *.jpeg"),
                 ("All Files", "*.*")
             ],
-            initialdir="/home/jed/git/2025_Hackathon/Image Data/DataSet_CdTe"
+            initialdir="/home/jed/git/2025_Hackathon"
         )
 
         if file_path:
@@ -331,6 +342,8 @@ class DefectDetectionGUI:
 
         # Update bar chart with class counts
         self.update_bar_chart(bboxes)
+        self.ax.set_xlim(self.base_xlim)
+        self.ax.set_ylim(self.base_ylim)
 
         self.canvas.draw()
 
@@ -617,14 +630,14 @@ class DefectDetectionGUI:
 
         try:
             # Update status
-            self.status_label.config(text="Running defect detection...")
+            self.status_label.config(text="Running YOLO defect detection...")
             self.root.update()
 
             # Time the detection
             start_time = time.time()
 
-            # Find defects
-            self.bounding_boxes = find_defects(self.original_image)
+            # Find defects using YOLO
+            self.bounding_boxes = find_defects_yolo(self.model, self.original_image)
 
             # Calculate timing
             end_time = time.time()
@@ -678,10 +691,12 @@ def main():
     parser = argparse.ArgumentParser(description='Defect Detection GUI')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug mode (allows loading ground truth bounding box files)')
+    parser.add_argument('--model', type=str, default=None,
+                       help='Path to YOLO model file (default: trained_models/yolov11_obb/model_1/weights/best.pt)')
     args = parser.parse_args()
 
     root = tk.Tk()
-    app = DefectDetectionGUI(root, debug_mode=args.debug)
+    app = DefectDetectionGUI(root, debug_mode=args.debug, model_path=args.model)
     root.mainloop()
 
     return 0

@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+from ultralytics import YOLO
 
 def load_images(path_name):
     """Loads images from the specified path and returns them as a numpy array.
@@ -77,6 +78,51 @@ def _find_random_defect_boxes(image, num_defects=None):
         boxes.append(box)
     return boxes
 
+def find_defects_yolo(model, image):
+    """Detect defects in the image using a YOLO model.
+
+    Args:
+        model: YOLO model instance for inference.
+        image (numpy.ndarray): 2D or 3D array representing the image.
+
+    Returns:
+        list: List of bounding boxes in the format (class_id, x1, y1, x2, y2, x3, y3, x4, y4).
+              Each bounding box contains class_id followed by 4 corner points (x, y) of the oriented box.
+    """
+    # Convert grayscale to RGB if needed (YOLO expects 3 channels)
+    if image.ndim == 2:
+        # Stack grayscale image to create 3-channel RGB
+        image = np.stack([image, image, image], axis=-1)
+
+    # Run inference
+    results = model(image, verbose=False)
+
+    # Extract oriented bounding boxes
+    bounding_boxes = []
+
+    if len(results) > 0 and results[0].obb is not None:
+        # Get OBB data
+        obb_data = results[0].obb
+
+        # Get class IDs and corner coordinates
+        if obb_data.xyxyxyxy is not None and len(obb_data.xyxyxyxy) > 0:
+            class_ids = obb_data.cls.cpu().numpy().astype(int)
+            corners = obb_data.xyxyxyxy.cpu().numpy()
+
+            # Convert to required format: (class_id, x1, y1, x2, y2, x3, y3, x4, y4)
+            for cls_id, corner_points in zip(class_ids, corners):
+                # corner_points shape is (4, 2) representing 4 (x, y) pairs
+                bbox = (
+                    int(cls_id),
+                    float(corner_points[0, 0]), float(corner_points[0, 1]),  # x1, y1
+                    float(corner_points[1, 0]), float(corner_points[1, 1]),  # x2, y2
+                    float(corner_points[2, 0]), float(corner_points[2, 1]),  # x3, y3
+                    float(corner_points[3, 0]), float(corner_points[3, 1])   # x4, y4
+                )
+                bounding_boxes.append(bbox)
+
+    return bounding_boxes
+
 def find_defects(image):
     """Located the defects in the image chunk.
     Args:
@@ -117,11 +163,28 @@ def display_bounding_boxes(image, bounding_boxes):
 
     plt.show()
 
-def main(path_name):
+def main(path_name, model_path=None):
+    """Main function to run defect detection.
+
+    Args:
+        path_name (str): Path to the image file.
+        model_path (str, optional): Path to the YOLO model. If None, uses default path.
+    """
+    from pathlib import Path
+    import os
+
+    # Load YOLO model
+    if model_path is None:
+        model_path = Path(os.getcwd()) / "trained_models" / "yolov11_obb" / "model_1" / "weights" / "best.pt"
+
+    print(f"Loading YOLO model from: {model_path}")
+    model = YOLO(model_path)
+
     # Load image
     image = load_images(path_name)
 
-    bounding_boxes = find_defects(image)
+    # Run YOLO-based defect detection
+    bounding_boxes = find_defects_yolo(model, image)
 
     # Display bounding boxes on original image
     display_bounding_boxes(image, bounding_boxes)
@@ -129,10 +192,11 @@ def main(path_name):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) != 2:
-        print("Usage: python main.py <path_to_image>")
+    if len(sys.argv) < 2:
+        print("Usage: python main.py <path_to_image> [model_path]")
         sys.exit(1)
 
     path_name = sys.argv[1]
+    model_path = sys.argv[2] if len(sys.argv) > 2 else None
 
-    main(path_name)
+    main(path_name, model_path)
