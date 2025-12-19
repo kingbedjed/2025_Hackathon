@@ -1,4 +1,0 @@
-train: /home/jed/git/2025_Hackathon/training_data/images/train
-val: /home/jed/git/2025_Hackathon/training_data/images/validation
-nc: 3
-names: ['grain_boundary', 'vacancy', 'interstitial']
