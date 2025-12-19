@@ -95,7 +95,7 @@ def find_defects_yolo(model, image):
         image = np.stack([image, image, image], axis=-1)
 
     # Run inference
-    results = model(image, verbose=False)
+    results = model(image, verbose=False, conf=0.1, iou=0.3)
 
     # Extract oriented bounding boxes
     bounding_boxes = []

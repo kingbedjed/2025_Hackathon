@@ -41,7 +41,7 @@ class DefectDetectionGUI:
 
         # Load YOLO model
         if model_path is None:
-            model_path = Path(os.getcwd()) / "trained_models" / "yolov11_obb" / "model_1" / "weights" / "best.pt"
+            model_path = Path(os.getcwd()) / "trained_models" / "yolov11_obb" / "model_4" / "weights" / "best.pt"
 
         print(f"Loading YOLO model from: {model_path}")
         self.model = YOLO(model_path)
@@ -815,7 +815,7 @@ def main():
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug mode (allows loading ground truth bounding box files)')
     parser.add_argument('--model', type=str, default=None,
-                       help='Path to YOLO model file (default: trained_models/yolov11_obb/model_1/weights/best.pt)')
+                       help='Path to YOLO model file (default: trained_models/yolov11_obb/model_4/weights/best.pt)')
     parser.add_argument('--pixel-width', type=float, default=22.8,
                        help='Pixel width in nanometers for scale bar (default: 22.8 nm)')
     args = parser.parse_args()
