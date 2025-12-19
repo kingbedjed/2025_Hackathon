@@ -1,5 +1,3 @@
-![defect detection gui](defect_detection_gui.png)
-
 # Defect Detection System
 
 A YOLOv11-based defect detection system for microscopy images of CdTe materials, featuring synthetic training data generation and an interactive GUI for inspection.
@@ -61,14 +59,30 @@ python generate_training_all_data.py
 ### What It Does
 
 - Generates synthetic STEM microscopy images with defects
-- Creates 20 base images with different random seeds
+- Creates 80 base images with different random seeds
 - Applies data augmentation (rotations: 0°, 90°, 180°, 270° and reflections)
-- Produces ~320 total images (256 training, 64 validation)
+- Produces ~1280 total images (1024 training, 256 validation)
 - Generates oriented bounding boxes in YOLO format
 - Creates three defect classes:
   - Class 0: Grain boundaries
   - Class 1: Vacancies
   - Class 2: Interstitials
+
+#### Parameters Kept Constant:
+- spacing of the lattice
+- distance between atoms in the dumbbells
+- size of atoms in the dumbbells
+- intensity of the atoms (relative to a background intensity)
+- Gaussian blurring
+- noise levels
+
+#### Parameters Randomized for Each Base Image:
+- tilt of the dumbbells
+- tilt of the lattice
+- number and position of interstitials
+- number and position of vacancies
+- type of grain boundary (single vs double twin)
+- position and angle of the grain boundary
 
 ### Output Structure
 
