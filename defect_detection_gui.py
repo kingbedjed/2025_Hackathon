@@ -684,7 +684,7 @@ class DefectDetectionGUI:
                 ("Text Files", "*.txt"),
                 ("All Files", "*.*")
             ],
-            initialdir="/home/jed/git/2025_Hackathon/training_data/labels"
+            initialdir="/home/jed/git/2025_Hackathon"
         )
 
         if not bbox_file:
@@ -704,7 +704,7 @@ class DefectDetectionGUI:
                     if len(parts) >= 9:
                         # Convert to floats/ints
                         class_id = int(float(parts[0]))
-                        coords = [float(p) for p in parts[1:9]]
+                        coords = [float(p) * self.original_image.shape[i % 2] for i, p in enumerate(parts[1:9])]
 
                         # Create bbox tuple: (class_id, x1, y1, x2, y2, x3, y3, x4, y4)
                         bbox = (class_id, *coords)

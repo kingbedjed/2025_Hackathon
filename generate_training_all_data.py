@@ -44,9 +44,6 @@ names: ['grain_boundary', 'vacancy', 'interstitial']
     with open(training_data_dir / "training_data.yaml", 'w') as f:
         f.write(text.strip())
 
-    rotations = [0, 90, 180, 270]
-    reflections = ['none', 'horizontal', 'vertical', 'both']
-
     all_seeds = [s + 1 for s in range(num_seeds)]
 
     number_of_images = len(all_seeds) * len(rotations) * len(reflections)
