@@ -4,14 +4,17 @@ from pathlib import Path
 from PIL import Image
 from tqdm import tqdm
 
-training_data_dir = Path("./data/dataset_3")
+training_data_dir = Path("./data/dataset_4")
 img_size = 768
 # num_seeds = 20
 # rotations = [0, 90, 180, 270]
 # reflections = ['none', 'horizontal', 'vertical', 'both']
-num_seeds = 80
-rotations = [0, 90]
-reflections = ['none', 'horizontal']
+# num_seeds = 80
+# rotations = [0, 90]
+# reflections = ['none', 'horizontal']
+num_seeds = 320
+rotations = [0]
+reflections = ['none']
 
 if __name__ == "__main__":
     training_data_dir.mkdir(exist_ok=True)
